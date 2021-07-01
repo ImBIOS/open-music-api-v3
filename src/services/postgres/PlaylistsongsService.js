@@ -5,8 +5,10 @@ const { mapDBToModel } = require("../../utils");
 const NotFoundError = require("../../exceptions/NotFoundError");
 
 class PlaylistsongsService {
-  constructor() {
+  constructor(collaborationService, cacheService) {
     this._pool = new Pool();
+    this._collaborationService = collaborationService;
+    this._cacheService = cacheService;
   }
 
   async addPlaylistsong(songId, playlistId) {
@@ -23,22 +25,35 @@ class PlaylistsongsService {
       throw new InvariantError("Lagu gagal ditambahkan");
     }
 
+    await this._cacheService.delete(`playlistsongs:${playlistId}`);
     return result.rows[0].id;
   }
 
   async getPlaylistsongById(id) {
-    const query = {
-      text: `SELECT playlistsongs.*, songs.title, songs.performer FROM playlistsongs LEFT JOIN songs ON songs.id = playlistsongs.song_id 
-      WHERE playlistsongs.playlist_id = $1`,
-      values: [id],
-    };
-    const result = await this._pool.query(query);
+    try {
+      // mendapatkan catatan dari cache
+      const result = await this._cacheService.get(`playlistsongs:${id}`);
+      return JSON.parse(result);
+    } catch (error) {
+      // bila gagal, diteruskan dengan mendapatkan catatan dari database
+      const query = {
+        text: `SELECT playlistsongs.*, songs.title, songs.performer FROM playlistsongs LEFT JOIN songs ON songs.id = playlistsongs.song_id 
+        WHERE playlistsongs.playlist_id = $1`,
+        values: [id],
+      };
+      const result = await this._pool.query(query);
 
-    if (!result.rows.length) {
-      throw new NotFoundError("Playlist tidak ditemukan");
+      if (!result.rows.length) {
+        throw new NotFoundError("Playlist tidak ditemukan");
+      }
+
+      const mappedResult = result.rows.map(mapDBToModel);
+
+      // catatan akan disimpan pada cache sebelum fungsi getNotes dikembalikan
+      await this._cacheService.set(`playlistsongs:${id}`, JSON.stringify(mappedResult));
+
+      return mappedResult;
     }
-
-    return result.rows.map(mapDBToModel);
   }
 
   async deletePlaylistsong(songId, playlistId) {
@@ -52,6 +67,9 @@ class PlaylistsongsService {
     if (!result.rows.length) {
       throw new InvariantError("Lagu gagal dihapus");
     }
+
+    const { id } = result.rows[0];
+    await this._cacheService.delete(`playlistsongs:${id}`);
   }
 
   async verifyCollaborator(songId, playlistId) {
