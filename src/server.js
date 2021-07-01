@@ -35,6 +35,11 @@ const playlistsongs = require("./api/playlistsongs");
 const PlaylistsongsService = require("./services/postgres/PlaylistsongsService");
 const PlaylistsongsValidator = require("./validator/playlistsongs");
 
+// Exports
+const _exports = require("./api/exports");
+const ProducerService = require("./services/rabbitmq/ProducerService");
+const ExportsValidator = require("./validator/exports");
+
 const init = async () => {
   const collaborationsService = new CollaborationsService();
   const songsService = new SongsService();
@@ -61,7 +66,7 @@ const init = async () => {
   ]);
 
   // mendefinisikan strategy otentikasi jwt
-  server.auth.strategy("playlistsapp_jwt", "jwt", {
+  server.auth.strategy("playlists_songsapp_jwt", "jwt", {
     keys: process.env.ACCESS_TOKEN_KEY,
     verify: {
       aud: false,
@@ -123,6 +128,13 @@ const init = async () => {
         playlistsongsService,
         playlistsService,
         validator: PlaylistsongsValidator,
+      },
+    },
+    {
+      plugin: _exports,
+      options: {
+        service: ProducerService,
+        validator: ExportsValidator,
       },
     },
   ]);

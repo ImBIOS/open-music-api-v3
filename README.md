@@ -1,4 +1,4 @@
-# Open Music API V2
+# Open Music API V3
 
 This project is part of Dicoding Academy submission to complete "Belajar Fundamental Aplikasi Back-End" Course
 
