@@ -25,7 +25,7 @@ class PlaylistsongsService {
       throw new InvariantError("Lagu gagal ditambahkan");
     }
 
-    await this._cacheService.delete(`playlistsongs:${playlistId}`);
+    await this._cacheService.delete(`playlistsongs:${id}`);
     return result.rows[0].id;
   }
 
