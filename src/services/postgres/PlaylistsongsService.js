@@ -25,7 +25,7 @@ class PlaylistsongsService {
       throw new InvariantError("Lagu gagal ditambahkan");
     }
 
-    await this._cacheService.delete(`playlistsongs:${id}`);
+    await this._cacheService.delete(`playlistsongs:${playlistId}`);
     return result.rows[0].id;
   }
 
@@ -68,8 +68,7 @@ class PlaylistsongsService {
       throw new InvariantError("Lagu gagal dihapus");
     }
 
-    const { id } = result.rows[0];
-    await this._cacheService.delete(`playlistsongs:${id}`);
+    await this._cacheService.delete(`playlistsongs:${playlistId}`);
   }
 
   async verifyCollaborator(songId, playlistId) {
